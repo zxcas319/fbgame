@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+<mapper namespace="room">
+	<select id="initInfo" parameterType="hashmap" resultType="hashmap">
+		SELECT rating, money, grade
+		FROM team a
+			LEFT OUTER JOIN userinfo b
+			on a.team_key = b.team_key
+		WHERE
+			b.user_key = #{user_key};
+	</select>
+	<insert id="getInsertInfo" parameterType="hashmap">
+		INSERT INTO game_room
+		(room_key, user_key,rating,host_user,user_index)
+		VALUES (uuid(), #{user_key},${rating},1,0)
+		<selectKey keyProperty="room_key" resultType="String" order="AFTER">
+		SELECT room_key
+		FROM game_room
+		WHERE user_key = #{user_key}
+			and user_key is not null
+		ORDER BY seq DESC
+		limit 1;
+		</selectKey>
+    </insert>
+	<insert id="getInsertRoom" parameterType="String">
+		INSERT INTO game_room
+		(room_key, rating,user_index)
+		VALUES (#{room_key}, ${rating},${user_index})
+    </insert>
+    <select id="getHostUser" parameterType="String" resultType="int">
+		SELECT host_user
+		FROM game_room
+		WHERE user_key =#{key}
+			  and host_user=1
+	</select>
+
+    <select id="findgameRoom" parameterType="hashmap" resultType="String">
+		SELECT room_key
+		FROM game_room
+		WHERE user_key is null
+			and rating = ${rating}
+			
+		limit 1;
+	</select>
+	<update id="getUpdateInfo">
+	UPDATE game_room
+	SET
+		user_key=#{user_key}
+	WHERE 
+		rating = ${rating}
+		and user_key is null
+		
+	limit 1;
+	</update>
+	 <select id="getRoomId" parameterType="hashmap" resultType="hashmap">
+		SELECT id, a.user_key,game_count
+		FROM userinfo a
+			LEFT OUTER JOIN game_room b
+			on a.user_key = b.user_key
+			WHERE b.user_key is not null
+			ORDER BY seq
+	</select>
+	<select id="duplicateId" parameterType="String" resultType="String">
+		SELECT room_key
+		FROM game_room a
+			WHERE a.user_key =#{user_key};
+	</select>
+	<update id="roomCount">
+		UPDATE game_room
+		SET
+		game_count = game_count + 1
+	</update>
+	
+	<select id="RoundInfo" resultType="hashmap">
+			SELECT user1 as testColumn 
+		FROM round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		union all
+		SELECT user2 from round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		union all
+		SELECT user3 from round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		union all
+		SELECT user4 from round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		union all
+		SELECT user5 from round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		union all
+		SELECT user6 from round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		
+			
+	</select>
+	
+	<select id="getRoundInfo" resultType="hashmap">
+			SELECT user1 as testColumn 
+		FROM round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		union all
+		SELECT user2 from round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		union all
+		SELECT user3 from round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		union all
+		SELECT user4 from round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		union all
+		SELECT user5 from round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		union all
+		SELECT user6 from round_table
+			WHERE game_count=(
+			SELECT game_count FROM game_room
+			WHERE room_key=#{key}
+			limit 1
+			)
+		
+	</select>
+	<select id="getRoomKeyInfo" parameterType="String" resultType="String">
+		SELECT room_key
+		FROM game_room a
+			WHERE a.user_key =#{user_key};
+	</select>
+	
+	<update id="tempGameKey" parameterType="hashmap">
+		UPDATE game_room
+		SET
+			temp_game_key=uuid()
+			limit 1
+   	</update>
+	
+	<select id="getTempGameKey" resultType="String">
+		SELECT temp_game_key
+			FROM game_room
+			WHERE temp_game_key is not null
+	</select>
+	
+	<update id="InsertGameKey" parameterType="java.util.List">
+	<foreach collection="list" item="up" separator=";">
+		UPDATE game_room
+		SET
+		 game_key=#{up.tempGameKey}
+		 WHERE
+		 user_index=${up.testColumn}
+		 
+  	</foreach>
+	</update>
+	
+	<update id="deleteTempGameKey" parameterType="hashmap">
+		UPDATE game_room
+		SET
+		temp_game_key=null
+		WHERE 
+		temp_game_key is not null
+   	</update>
+	
+	
+</mapper>

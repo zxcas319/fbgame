@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="game">
+	<select id="getOrderUserPlayerInfo" parameterType="String" resultType="hashmap">
+		SELECT b.name
+		, a.select_position
+		, a.player_key
+		FROM game_info a
+		LEFT OUTER JOIN player b
+		on a.player_key = b.player_key
+		LEFT OUTER JOIN userinfo c
+		on b.user_key = c.user_key
+		WHERE
+		c.id = #{order_id};
+	</select>
+
+	<insert id="makeGame" parameterType="hashMap">
+		INSERT INTO game(game_key, home_user)
+		VALUES (uuid(), #{user_key})
+		<selectKey keyProperty="game_key" resultType="String" order="AFTER">
+			SELECT game_key FROM game WHERE home_user = #{user_key}
+		</selectKey>
+	</insert>
+
+	<update id="updateHomeStatus">
+		UPDATE game
+		SET
+		home_status = #{status}
+		WHERE
+		game_key = #{game_key}
+		and home_user = #{user_key}
+	</update>
+
+	<update id="updateAwayStatus">
+		UPDATE game
+		SET
+		away_status = #{status}
+		WHERE
+		game_key = #{game_key}
+		and away_user = #{user_key}
+	</update>
+
+	<update id="intoGame">
+		UPDATE game
+		SET
+		<if test="po != null and po.equals('home')">
+			home_user = #{user_key}
+		</if>
+		<if test="po != null and po.equals('away')">
+			away_user = #{user_key}
+		</if>
+		WHERE
+		game_key = #{game_key}
+	</update>
+
+	<select id="getGameKey" parameterType="String" resultType="String">
+		SELECT game_key
+		FROM game
+		WHERE
+			home_user = #{user_key}
+			or away_user = #{user_key}
+		limit 1;
+	</select>
+
+	<select id="findGame" parameterType="String" resultType="hashmap">
+		SELECT game_key, home_user, away_user
+		FROM game
+		WHERE
+		(home_user is null and away_user is not null)
+		or (home_user is not null and away_user is null)
+		limit 1;
+	</select>
+
+	<select id="checkAwayUser" parameterType="String" resultType="hashmap">
+		SELECT home_user, away_user, b.id home_id, c.id away_id,
+		home_status, away_status
+		FROM game a
+		LEFT OUTER JOIN userinfo b
+		on a.home_user = b.user_key
+		LEFT OUTER JOIN userinfo c
+		on a.away_user = c.user_key
+		WHERE
+		home_user = #{user_key}
+		or away_user = #{user_key};
+	</select>
+
+	<select id="getBasicCoord" parameterType="String" resultType="hashmap">
+		SELECT coord_x, coord_y, priority
+		FROM basic_coord
+		WHERE basic_position = #{position};
+	</select>
+
+	<select id="getPlayerKey" parameterType="String" resultType="hashmap">
+		SELECT player_key
+		FROM player
+		WHERE user_key = #{user_key};
+	</select>
+
+	<delete id="resetGamePosition" parameterType="java.util.List">
+		<foreach collection="list" item="up" separator=";">
+			DELETE FROM
+			game_info
+			WHERE
+			player_key = #{up.player_key}
+		</foreach>
+	</delete>
+
+	<insert id="saveGamePosition" parameterType="java.util.List">
+		<foreach collection="list" item="up" separator=";">
+			INSERT INTO
+			game_info
+			(game_key, player_key, coord_x, coord_y, select_position, own_ball)
+			VALUES
+			(#{up.game_key}, #{up.player_key}, ${up.coord_x}, ${up.coord_y}, #{up.position}, #{up.own_ball})
+		</foreach>
+	</insert>
+
+	<select id="getGameInfo" parameterType="String" resultType="hashmap">
+		SELECT
+		a.coord_x
+		, a.coord_y
+		, a.select_position
+		, a.player_key
+		, a.own_ball
+		, b.name
+		, b.back_number
+		, b.user_key
+		FROM game_info a
+		LEFT OUTER JOIN player b
+		on a.player_key = b.player_key
+		WHERE
+		a.game_key = #{game_key }
+	</select>
+
+	<select id="getPlayerList" parameterType="String" resultType="hashmap">
+		SELECT select_position position, player_key
+		FROM
+		player
+		WHERE
+		user_key = #{key}and select_position is not null
+	</select>
+
+	<update id="changePosition" parameterType="hashmap">
+		UPDATE game_info
+		SET
+		coord_x = ${coord_x}
+		, coord_y = ${coord_y}
+		, select_position = #{position}
+		WHERE
+		player_key = #{player_key}
+	</update>
+
+	<delete id="removePlayer" parameterType="String">
+		DELETE FROM game_info
+		WHERE
+		player_key = #{player_key}
+	</delete>
+
+	<insert id="insertPlayer" parameterType="hashmap">
+		INSERT INTO game_info
+		(game_key, player_key, coord_x, coord_y, select_position)
+		VALUES (#{game_key}, #{player_key}, ${coord_x}, ${coord_y}, #{position})
+	</insert>
+
+	<select id="getMakePercent" parameterType="String" resultType="hashmap">
+		SELECT shoot, pass, dribble
+		FROM action_percent
+		WHERE section = #{section }
+	</select>
+
+	<select resultType="hashmap" parameterType="String" id="getSection">
+		SELECT *
+		FROM divide_section
+		WHERE
+		<if test="gk != null and !gk.equals('')">section = 1 </if>
+		<if test="gk == null or gk.equals('')">section != 1 </if>
+	</select>
+
+	<delete id="removeGameInfo" parameterType="String">
+		DELETE FROM game_info
+		WHERE
+		game_key = #{game_key}
+	</delete>
+
+	<delete id="removeGameLog" parameterType="String">
+		DELETE FROM game_log
+		WHERE
+		game_key = #{game_key}
+	</delete>
+
+	<delete id="removeGame" parameterType="String">
+		DELETE FROM game
+		WHERE
+		game_key = #{game_key}
+	</delete>
+
+	<select id="checkHome" parameterType="String" resultType="String">
+		SELECT home_user
+		FROM game
+		WHERE
+		game_key = #{game_key}
+	</select>
+
+	<select id="checkGameLog" parameterType="String" resultType="int">
+		SELECT count(*)
+		FROM game_log
+		WHERE
+		game_key = #{game_key}
+	</select>
+
+	<insert id="createGameLog" parameterType="hashmap">
+		INSERT INTO game_log (game_key)
+		VALUES (#{game_key})
+	</insert>
+
+	<update id="updateGameTime" parameterType="hashmap">
+		UPDATE game_log
+		SET
+		game_time = game_time + 1
+		WHERE
+		game_key = #{game_key}
+	</update>
+
+	<select id="getGameTime" parameterType="String" resultType="int">
+		SELECT game_time FROM game_log WHERE game_key = #{game_key}
+	</select>
+</mapper>
